@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'rest_framework',
 
     # local
-    'apps.catalog_cars.apps.CatalogCarsConfig',
+    'apps.catalog.apps.CatalogConfig',
+    'apps.market.apps.MarketConfig',
 ]
 
 MIDDLEWARE = [

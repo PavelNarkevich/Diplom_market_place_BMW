@@ -1,11 +1,15 @@
 from rest_framework import status
+from rest_framework.permissions import DjangoModelPermissions, AllowAny
 from rest_framework.response import Response
+
+from apps.catalog.parsing import Parsing
 
 from apps.catalog.models import (
     Cars,
     CarElement,
     Component,
-    Details, Basket,
+    Details,
+    Basket,
 )
 
 from apps.catalog.serializers import (
@@ -15,21 +19,30 @@ from apps.catalog.serializers import (
     FullInfoCarSerializer,
     CarElementSerializer,
     ComponentSerializer,
-    DetailsSerializer,
     TestSerializer,
     BasketSerializer,
+    FullInfoDetailsSerializer,
+    AddOrderSerializer,
+    AddBasketSerializer,
+    GetUserOrderSerializer,
+    UpdateBasketSerializer,
 )
 
 from rest_framework.generics import (
     ListAPIView,
     CreateAPIView,
     RetrieveUpdateDestroyAPIView,
-    RetrieveAPIView, UpdateAPIView,
+    RetrieveAPIView,
+    get_object_or_404,
+    ListCreateAPIView,
 )
+
+from apps.staff.models import Order
 
 
 class GetCatalogCarsGenericView(ListAPIView):
     serializer_class = CatalogCarSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         return Cars.objects.distinct('body')
@@ -37,19 +50,51 @@ class GetCatalogCarsGenericView(ListAPIView):
 
 class GetChoiceTypeCarGenericView(ListAPIView):
     serializer_class = TypeCarSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         return Cars.objects.filter(body=self.kwargs['body'])
 
 
-class CreateCarsGenericView(CreateAPIView):
-    serializer_class = CarSerializer
+class CreateCarsGenericView(ListCreateAPIView):
+    serializer_class = FullInfoCarSerializer
+    permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
         return Cars.objects.all()
 
+    def get(self, request, *args, **kwargs):
+        instance = list(self.get_queryset())
+        serializer = self.get_serializer(instance=instance, many=True)
+
+        if instance:
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
+        )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return self.get(request, *args, **kwargs)
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=[]
+        )
+
 
 class GetCarGenericView(ListAPIView):
+    serializer_class = FullInfoCarSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         car = Cars.objects.filter(id=self.kwargs['car_id'])
@@ -84,19 +129,15 @@ class GetCarGenericView(ListAPIView):
 
 class UpdateDeleteCarsGenericView(RetrieveUpdateDestroyAPIView):
     serializer_class = CarSerializer
+    permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
-        return Cars.objects.filter(id=self.kwargs['car_id'])
+        car = Cars.objects.filter(id=self.kwargs['car_id'])
+        return car
 
     def get_object(self):
         data = Cars.objects.filter(id=self.kwargs['car_id'])
-        if data:
-            return data
-
-        return Response(
-            status=status.HTTP_204_NO_CONTENT,
-            data=[]
-        )
+        return data
 
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -107,9 +148,53 @@ class UpdateDeleteCarsGenericView(RetrieveUpdateDestroyAPIView):
             data=serializer.data
         )
 
+    def put(self, request, *args, **kwargs):
+        instance = get_object_or_404(Cars, id=self.kwargs['car_id'])
+        serializer = self.get_serializer(instance=instance, data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+    def patch(self, request, *args, **kwargs):
+        instance = get_object_or_404(Cars, id=self.kwargs['car_id'])
+        serializer = self.serializer_class(instance=instance, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=[]
+        )
+
 
 class GetComponentGenericView(ListAPIView):
     serializer_class = ComponentSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         return Component.objects.filter(element=self.kwargs['elem_id'])
@@ -131,7 +216,8 @@ class GetComponentGenericView(ListAPIView):
 
 
 class GetDetailsGenericView(ListAPIView):
-    serializer_class = DetailsSerializer
+    serializer_class = FullInfoDetailsSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         return Details.object.filter(
@@ -177,9 +263,10 @@ class TestGenericView(RetrieveAPIView):
 
 class GetBasketGenericView(ListAPIView):
     serializer_class = BasketSerializer
+    permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
-        return Basket.object.all()
+        return Basket.object.filter(shopper=self.request.user.id, status='P')
 
     def get(self, request, *args, **kwargs):
         instance = list(self.get_queryset())
@@ -199,7 +286,8 @@ class GetBasketGenericView(ListAPIView):
 
 
 class AddBasketGenericView(CreateAPIView):
-    serializer_class = BasketSerializer
+    serializer_class = AddBasketSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         return Basket.object.all()
@@ -207,7 +295,7 @@ class AddBasketGenericView(CreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
 
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
 
             return Response(
@@ -222,13 +310,448 @@ class AddBasketGenericView(CreateAPIView):
 
 
 class UpdateDeletedBasketGenericView(RetrieveUpdateDestroyAPIView):
-    serializer_class = BasketSerializer
+    serializer_class = UpdateBasketSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return Basket.object.all()
+        return Basket.object.filter(
+            shopper=self.request.user,
+            status='P',
+            items=self.kwargs['id_detail']
+        ).first()
 
     def get_object(self):
         return Basket.object.filter(
             shopper=self.request.user,
-            items=self.kwargs['']
+            items=self.kwargs['id_detail'],
+            status='P'
+        ).first()
+
+    def put(self, request, *args, **kwargs):
+        instance = get_object_or_404(
+            Basket,
+            items=self.kwargs['id_detail'],
+            shopper=self.request.user,
+            status='P'
+        )
+
+        serializer = self.serializer_class(
+            instance=instance,
+            data=request.data
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+    def delete(self, request, *args, **kwargs):
+        instance = get_object_or_404(
+            Basket,
+            items=self.kwargs['id_detail'],
+            shopper=self.request.user,
+            status='P'
+        )
+
+        instance.delete()
+        return Response(
+            status=status.HTTP_200_OK,
+            data=[]
+        )
+
+
+class UpdateDeletedCarElementGenericView(RetrieveUpdateDestroyAPIView):
+    serializer_class = CarElementSerializer
+    permission_classes = [DjangoModelPermissions]
+
+    def get_queryset(self):
+        return CarElement.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        instance = get_object_or_404(CarElement, id=self.kwargs.get('elem_id'))
+        serializer = self.serializer_class(instance=instance)
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=serializer.data
+        )
+
+    def put(self, request, *args, **kwargs):
+        instance = get_object_or_404(CarElement, id=self.kwargs.get('elem_id'))
+
+        serializer = self.serializer_class(
+            instance=instance,
+            data=request.data
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+    def delete(self, request, *args, **kwargs):
+        instance = get_object_or_404(CarElement, id=self.kwargs.get('elem_id'))
+        instance.delete()
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=[]
+        )
+
+
+class CreateCarElementGenericView(ListCreateAPIView):
+    serializer_class = CarElementSerializer
+    permission_classes = [DjangoModelPermissions]
+
+    def get_queryset(self):
+        return CarElement.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        instance = list(self.get_queryset())
+
+        serializer = self.serializer_class(instance=instance, many=True)
+
+        if instance:
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
+        )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return self.get(request, *args, **kwargs)
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+
+class CreateCarComponentGenericView(ListCreateAPIView):
+    serializer_class = ComponentSerializer
+    permission_classes = [DjangoModelPermissions]
+
+    def get_queryset(self):
+        return Component.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        instance = list(self.get_queryset())
+        serializer = self.serializer_class(
+            instance=instance,
+            many=True
+        )
+
+        if instance:
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
+        )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return self.get(request, *args, **kwargs)
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+
+class UpdateCarComponentGenericView(RetrieveUpdateDestroyAPIView):
+    serializer_class = ComponentSerializer
+    permission_classes = [DjangoModelPermissions]
+
+    def get_queryset(self):
+        return Component.objects.all()
+
+    def get_object(self):
+        return Component.objects.filter(id=self.kwargs['id_component']).first()
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.serializer_class(instance=instance)
+
+        if instance:
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
+        )
+
+    def put(self, request, *args, **kwargs):
+        instance = get_object_or_404(Component, id=self.kwargs['id_component'])
+        serializer = self.serializer_class(
+            instance=instance,
+            data=request.data
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=[]
+        )
+
+
+class CreateDetailsGenericView(ListCreateAPIView):
+    serializer_class = FullInfoDetailsSerializer
+    permission_classes = [DjangoModelPermissions]
+
+    def get_queryset(self):
+        return Details.object.all()
+
+    def get_object(self):
+        return Details.object.all()
+
+    def get(self, request, *args, **kwargs):
+        instance = list(self.get_queryset())
+        serializer = self.serializer_class(instance=instance, many=True)
+
+        if instance:
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
+        )
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                status=status.HTTP_201_CREATED,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+
+class UpdateDetailsGenericView(RetrieveUpdateDestroyAPIView):
+    serializer_class = FullInfoDetailsSerializer
+    permission_classes = [DjangoModelPermissions]
+
+    def get_queryset(self):
+        return Details.object.all()
+
+    def get_object(self):
+        return Details.object.filter(id=self.kwargs['id_detail']).first()
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.serializer_class(instance=instance, many=True)
+
+        if instance:
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_404_NOT_FOUND,
+            data=[]
+        )
+
+    def put(self, request, *args, **kwargs):
+        instance = get_object_or_404(Details, id=self.kwargs['id_detail'])
+        serializer = self.serializer_class(
+            instance=instance,
+            data=request.data
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=[]
+        )
+
+
+class CreateOrderGenericView(CreateAPIView):
+    serializer_class = AddOrderSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return Order.object.all()
+
+    @staticmethod
+    def deleted_basket_user(user):
+        data = Basket.object.filter(shopper=user).all()
+
+        for elem in data:
+            elem.status = 'O'
+            elem.save()
+
+        return True
+
+    def prepare_data(self):
+        data = {
+            **self.request.data,
+            "phone": self.request.user.phone,
+        }
+
+        self.serializer_class.Meta.fields.append('phone')
+
+        return data
+
+    def post(self, request, *args, **kwargs):
+        data = self.prepare_data()
+        serializer = self.serializer_class(data=data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            self.deleted_basket_user(user=self.request.user.id)
+            self.serializer_class.Meta.fields.remove('phone')
+
+            return Response(
+                status=status.HTTP_201_CREATED,
+                data=serializer.data
+            )
+
+        self.serializer_class.Meta.fields.remove('phone')
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+
+class GetCarByVinCodeGenericView(RetrieveAPIView):
+    serializer_class = FullInfoCarSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return Cars.objects.all()
+
+    def get_object(self, *args, **kwargs):
+        data = Parsing().get_car(vin_code=self.kwargs['vin_code'])
+        if data:
+            car = Cars.objects.filter(
+                body=data.get('body'),
+                body_type__body=data.get('body_type'),
+                model=data.get('model'),
+                engine_code=data.get('engine_code')
+            ).first()
+
+            return car
+
+        return None
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if instance:
+            serializer = self.get_serializer(instance=instance)
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
+        )
+
+
+class GetUserOrdersGenericView(ListAPIView):
+    serializer_class = GetUserOrderSerializer
+    permission_classes = [DjangoModelPermissions]
+
+    def get_queryset(self):
+        return Order.object.all()
+
+    def get_object(self):
+        return Order.object.filter(shopper=self.request.user).all()
+
+    def get(self, request, *args, **kwargs):
+        instance = list(self.get_object())
+
+        if instance:
+            serializer = self.serializer_class(instance=instance, many=True)
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
         )

@@ -15,6 +15,7 @@ from apps.market.serializers import (
     SocialSerializer,
     NewsSerializer,
     CreateNewsSerializer,
+    UpdateNewsSerializer,
 )
 
 from rest_framework.generics import (
@@ -27,9 +28,17 @@ from rest_framework.generics import (
     CreateAPIView,
 )
 
+from rest_framework.permissions import (
+    AllowAny,
+    IsAdminUser,
+    IsAuthenticated,
+    DjangoModelPermissions, DjangoModelPermissionsOrAnonReadOnly
+)
+
 
 class GetInfoCompanyGenericView(RetrieveAPIView):
     serializer_class = CompanySerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         return Company.objects.all()
@@ -39,6 +48,7 @@ class GetInfoCompanyGenericView(RetrieveAPIView):
 
 
 class PutInfoCompanyGenericView(RetrieveUpdateAPIView):
+    permission_classes = [IsAdminUser]
     serializer_class = UpdateCompanySerializer
 
     def get_queryset(self):
@@ -76,6 +86,7 @@ class PutInfoCompanyGenericView(RetrieveUpdateAPIView):
 
 class GetCreateWorkTimeGenericView(ListCreateAPIView):
     serializer_class = WorkTimeSerializer
+    permission_classes = [IsAdminUser, IsAuthenticated]
 
     def get_queryset(self):
         return WorkTime.objects.all()
@@ -99,6 +110,7 @@ class GetCreateWorkTimeGenericView(ListCreateAPIView):
 
 class GetCreateSocialNetworkGenericView(ListCreateAPIView):
     serializer_class = SocialSerializer
+    permission_classes = [IsAdminUser, IsAuthenticated]
 
     def get_queryset(self):
         return SocialNetwork.objects.all()
@@ -122,6 +134,7 @@ class GetCreateSocialNetworkGenericView(ListCreateAPIView):
 
 class UpdateDeleteWorkTimeGenericView(RetrieveUpdateDestroyAPIView):
     serializer_class = WorkTimeSerializer
+    permission_classes = [IsAdminUser, IsAuthenticated]
 
     def get_queryset(self):
         return WorkTime.objects.all()
@@ -133,6 +146,7 @@ class UpdateDeleteWorkTimeGenericView(RetrieveUpdateDestroyAPIView):
 
 class UpdateDeleteSocialNetworkGenericView(RetrieveUpdateDestroyAPIView):
     serializer_class = SocialSerializer
+    permission_classes = [IsAdminUser, IsAuthenticated]
 
     def get_queryset(self):
         return SocialNetwork.objects.all()
@@ -144,9 +158,10 @@ class UpdateDeleteSocialNetworkGenericView(RetrieveUpdateDestroyAPIView):
 
 class GetNewsGenericView(ListAPIView):
     serializer_class = NewsSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return News.objects.all()
+        return News.objects.filter(date_deleted=None).all()
 
     def get(self, request, *args, **kwargs):
         instance = self.get_queryset()
@@ -167,6 +182,7 @@ class GetNewsGenericView(ListAPIView):
 
 class CreateNewsGenericView(CreateAPIView):
     serializer_class = CreateNewsSerializer
+    permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
         return News.objects.all()
@@ -188,6 +204,8 @@ class CreateNewsGenericView(CreateAPIView):
         if serializer.is_valid():
             serializer.save()
 
+            CreateNewsSerializer.Meta.fields.remove('author')
+
             return Response(
                 status=status.HTTP_201_CREATED,
                 data=serializer.data
@@ -196,4 +214,58 @@ class CreateNewsGenericView(CreateAPIView):
         return Response(
             status=status.HTTP_400_BAD_REQUEST,
             data=serializer.errors
+        )
+
+
+class UpdateDeleteNewsGenericView(RetrieveUpdateDestroyAPIView):
+    serializer_class = UpdateNewsSerializer
+    permission_classes = (DjangoModelPermissionsOrAnonReadOnly,)
+
+    def get_queryset(self):
+        return News.objects.all()
+
+    def get_object(self):
+        instance = News.objects.filter(id=self.kwargs['id_news']).first()
+        return instance
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if instance:
+            serializer = self.serializer_class(instance=instance)
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
+        )
+
+    def put(self, request, *args, **kwargs):
+        instance = get_object_or_404(News, id=self.kwargs['id_news'])
+
+        serializer = self.serializer_class(instance=instance, data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+    def delete(self, request, *args, **kwargs):
+        instance = get_object_or_404(News, id=self.kwargs['id_news'])
+        instance.delete()
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data="Deleted successfully"
         )

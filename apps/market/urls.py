@@ -11,6 +11,7 @@ from apps.market.views import (
     UpdateDeleteSocialNetworkGenericView,
     GetNewsGenericView,
     CreateNewsGenericView,
+    UpdateDeleteNewsGenericView,
 )
 
 urlpatterns = [
@@ -21,5 +22,6 @@ urlpatterns = [
     path('work_time/<int:id>/', UpdateDeleteWorkTimeGenericView.as_view()),
     path('social_network/<int:id>/', UpdateDeleteSocialNetworkGenericView.as_view()),
     path('news/', GetNewsGenericView.as_view()),
-    path('news/create/', CreateNewsGenericView.as_view())
+    path('news/create/', CreateNewsGenericView.as_view()),
+    path('news/<int:id_news>/', UpdateDeleteNewsGenericView.as_view()),
 ]

@@ -160,7 +160,10 @@ class Details(models.Model):
     name = models.CharField(max_length=70)
     brand = models.CharField(max_length=70)
     number = models.CharField(max_length=70)
-    price = models.CharField(max_length=20)
+    price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2
+    )
     photo = models.ImageField(
         upload_to="details/",
         blank=True,
@@ -194,24 +197,36 @@ class Details(models.Model):
 
 
 class Basket(models.Model):
+    status_choice = [
+        ('P', 'Pending'),
+        ('O', 'Ordered'),
+    ]
+
     quantity = models.IntegerField(default=0)
     items = models.ForeignKey(
         Details,
         on_delete=models.CASCADE,
-        related_name="item"
+        related_name="basket1",
     )
-    price = models.CharField(max_length=20)
+    price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2
+    )
     shopper = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         null=True,
         blank=True
     )
-
+    status = models.CharField(
+        max_length=1,
+        choices=status_choice,
+        default='P'
+    )
     object = models.Manager()
 
     def __str__(self):
-        return self.quantity
+        return f'{self.shopper} {self.items}  {self.quantity} {self.price}'
 
     class Meta:
         verbose_name = "Basket"

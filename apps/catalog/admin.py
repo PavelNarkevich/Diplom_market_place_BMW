@@ -10,6 +10,7 @@ from apps.catalog.models import (
     Component,
     CarElement,
     Details,
+    Basket,
 )
 
 
@@ -61,4 +62,9 @@ class DetailAdmin(admin.ModelAdmin):
 @admin.register(Component)
 class ComponentAdmin(admin.ModelAdmin):
     list_display = ['name']
+
+
+@admin.register(Basket)
+class BasketAdmin(admin.ModelAdmin):
+    list_display = ['quantity', 'shopper']
 

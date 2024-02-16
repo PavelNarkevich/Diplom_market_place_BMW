@@ -12,6 +12,10 @@ from apps.catalog.models import (
     Basket
 )
 
+from apps.staff.models import (
+    Order
+)
+
 
 class SeriesSerializer(serializers.ModelSerializer):
     class Meta:
@@ -101,6 +105,11 @@ class CarElementSerializer(serializers.ModelSerializer):
 
 
 class ComponentSerializer(serializers.ModelSerializer):
+    element = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=CarElement.objects.all()
+    )
+
     class Meta:
         model = Component
         fields = '__all__'
@@ -110,6 +119,7 @@ class DetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Details
         fields = [
+            'id'
             'name',
             'number',
             'price',
@@ -125,10 +135,11 @@ class TestSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class BasketSerializer(serializers.ModelSerializer):
+class AddBasketSerializer(serializers.ModelSerializer):
     items = serializers.SlugRelatedField(
-        slug_field=['name', 'number', 'brand'],
-        queryset=Details.object.all()
+        slug_field='id',
+        queryset=Details.object.all(),
+        read_only=False
     )
 
     class Meta:
@@ -138,7 +149,76 @@ class BasketSerializer(serializers.ModelSerializer):
             'quantity',
             'items',
             'price',
-            'shopper',
+            'shopper'
         ]
 
 
+class FullInfoDetailsSerializer(serializers.ModelSerializer):
+    car = CarSerializer(many=True, read_only=True),
+    component = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=Component.objects.all()
+    )
+
+    class Meta:
+        model = Details
+        fields = '__all__'
+
+
+class AddOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = [
+            'shopper',
+            'basket'
+        ]
+
+
+class DetailsForBaskerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Details
+        fields = [
+            'id',
+            'name',
+            'brand',
+            'number',
+            'price'
+        ]
+
+
+class UpdateBasketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Basket
+        fields = [
+            'id',
+            'quantity',
+            'price',
+        ]
+
+
+class BasketSerializer(serializers.ModelSerializer):
+    items = DetailsForBaskerSerializer(read_only=True)
+
+    class Meta:
+        model = Basket
+        fields = [
+            'id',
+            'quantity',
+            'items',
+            'price',
+        ]
+
+
+class GetUserOrderSerializer(serializers.ModelSerializer):
+    details = FullInfoDetailsSerializer(many=True, read_only=True)
+    status = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id',
+            'created_at',
+            'updated_at',
+            'details',
+            'status',
+        ]

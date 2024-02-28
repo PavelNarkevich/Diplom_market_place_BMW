@@ -1,5 +1,10 @@
 from rest_framework import status
-from rest_framework.permissions import DjangoModelPermissions, AllowAny
+from rest_framework.permissions import (
+    DjangoModelPermissions,
+    AllowAny,
+    IsAuthenticated
+)
+
 from rest_framework.response import Response
 
 from apps.catalog.parsing import Parsing
@@ -287,7 +292,7 @@ class GetBasketGenericView(ListAPIView):
 
 class AddBasketGenericView(CreateAPIView):
     serializer_class = AddBasketSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
         return Basket.object.all()
@@ -311,7 +316,7 @@ class AddBasketGenericView(CreateAPIView):
 
 class UpdateDeletedBasketGenericView(RetrieveUpdateDestroyAPIView):
     serializer_class = UpdateBasketSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
         return Basket.object.filter(
@@ -644,7 +649,7 @@ class UpdateDetailsGenericView(RetrieveUpdateDestroyAPIView):
 
 class CreateOrderGenericView(CreateAPIView):
     serializer_class = AddOrderSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Order.object.all()
@@ -732,7 +737,7 @@ class GetCarByVinCodeGenericView(RetrieveAPIView):
 
 class GetUserOrdersGenericView(ListAPIView):
     serializer_class = GetUserOrderSerializer
-    permission_classes = [DjangoModelPermissions]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Order.object.all()

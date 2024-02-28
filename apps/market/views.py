@@ -86,7 +86,7 @@ class PutInfoCompanyGenericView(RetrieveUpdateAPIView):
 
 class GetCreateWorkTimeGenericView(ListCreateAPIView):
     serializer_class = WorkTimeSerializer
-    permission_classes = [IsAdminUser, IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
         return WorkTime.objects.all()
@@ -110,7 +110,7 @@ class GetCreateWorkTimeGenericView(ListCreateAPIView):
 
 class GetCreateSocialNetworkGenericView(ListCreateAPIView):
     serializer_class = SocialSerializer
-    permission_classes = [IsAdminUser, IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
         return SocialNetwork.objects.all()
@@ -134,7 +134,7 @@ class GetCreateSocialNetworkGenericView(ListCreateAPIView):
 
 class UpdateDeleteWorkTimeGenericView(RetrieveUpdateDestroyAPIView):
     serializer_class = WorkTimeSerializer
-    permission_classes = [IsAdminUser, IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
         return WorkTime.objects.all()
@@ -146,7 +146,7 @@ class UpdateDeleteWorkTimeGenericView(RetrieveUpdateDestroyAPIView):
 
 class UpdateDeleteSocialNetworkGenericView(RetrieveUpdateDestroyAPIView):
     serializer_class = SocialSerializer
-    permission_classes = [IsAdminUser, IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
         return SocialNetwork.objects.all()

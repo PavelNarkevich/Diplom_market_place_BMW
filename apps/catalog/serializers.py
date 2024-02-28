@@ -94,7 +94,8 @@ class FullInfoCarSerializer(serializers.ModelSerializer):
             'transmission',
             'country',
             'body',
-            'engine_code'
+            'engine_code',
+            'model'
         ]
 
 
@@ -210,7 +211,7 @@ class BasketSerializer(serializers.ModelSerializer):
 
 
 class GetUserOrderSerializer(serializers.ModelSerializer):
-    details = FullInfoDetailsSerializer(many=True, read_only=True)
+    basket = BasketSerializer(many=True, read_only=True)
     status = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
@@ -219,6 +220,6 @@ class GetUserOrderSerializer(serializers.ModelSerializer):
             'id',
             'created_at',
             'updated_at',
-            'details',
+            'basket',
             'status',
         ]

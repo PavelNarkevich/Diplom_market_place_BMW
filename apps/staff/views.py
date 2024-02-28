@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import status
-from rest_framework.permissions import AllowAny, DjangoModelPermissions
+from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
 
 from rest_framework.generics import (
@@ -21,7 +21,7 @@ from apps.staff.serializers import (
 
 class UpdateStatusOrdersGenericView(RetrieveUpdateAPIView):
     serializer_class = UpdateOrderSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
         return Order.object.all()
@@ -132,7 +132,7 @@ class AddOrdersGenericView(CreateAPIView):
 
 class GetOrderGenericView(ListAPIView):
     serializer_class = GetOrderSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
         return Order.object.all()

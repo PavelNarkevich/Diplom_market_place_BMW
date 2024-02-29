@@ -62,4 +62,3 @@ class ValidateRegisterData:
 
     def validate_pwd(self):
         return self.validate_password_match()
-

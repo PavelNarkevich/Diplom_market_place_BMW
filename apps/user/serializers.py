@@ -2,8 +2,14 @@ from django.contrib.auth import password_validation
 from rest_framework import serializers
 
 from django.contrib.auth.models import User
+from rest_framework.exceptions import ValidationError
+
+from apps.catalog.models import Cars
+from apps.catalog.serializers import FullInfoCarSerializer
+
 from apps.user.validators import ValidateRegisterData
 
+from apps.user.models import Garage
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -56,6 +62,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             phone=validated_data['phone'],
         )
 
+        Garage.object.create(user_id=user.id)
+
         return user
 
 
@@ -85,3 +93,19 @@ class UserChangePasswordSerializer(serializers.Serializer):
         validate.validate_pwd()
 
         return attr
+
+
+class GarageSerializer(serializers.ModelSerializer):
+    cars = FullInfoCarSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Garage
+        fields = ['cars']
+
+
+class UpdateGarageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Garage
+        fields = ['cars']
+

@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated,
@@ -11,20 +12,25 @@ from rest_framework.generics import (
     CreateAPIView,
     RetrieveUpdateAPIView,
     UpdateAPIView,
+    ListAPIView,
 )
+
+from apps.catalog.models import Cars
+from apps.user.models import Garage
 
 from apps.user.errors_massages import NEW_PASSWORD_DO_NOT_MATCH_OLD_PASSWORD
 from apps.user.serializers import (
     UserRegisterSerializer,
     UserProfileSerializer,
     UserChangePasswordSerializer,
+    GarageSerializer,
+    UpdateGarageSerializer,
 )
 
 
 class UserRegisterGenericView(CreateAPIView):
     permission_classes = [AllowAny]
     serializer_class = UserRegisterSerializer
-
 
     @staticmethod
     def give_group_user(username):
@@ -126,4 +132,48 @@ class UpdateUserPasswordGenericView(UpdateAPIView):
         return Response(
             status=status.HTTP_400_BAD_REQUEST,
             data=NEW_PASSWORD_DO_NOT_MATCH_OLD_PASSWORD
+        )
+
+
+class GetUserGarageGenericView(ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = GarageSerializer
+
+    def get_queryset(self):
+        return Garage.object.get(user=self.request.user.id)
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+
+        if instance:
+            serializer = self.serializer_class(instance=instance)
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+
+class UpdateUserGarageGenericView(UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UpdateGarageSerializer
+
+    def get_object(self):
+        return Garage.object.get(user=self.request.user.id)
+
+    def put(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.serializer_class(instance=instance, data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
         )

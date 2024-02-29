@@ -1,0 +1,6 @@
+
+2024-02-29 13:34:36,734 INFO GET /catalog/ 200 AnonymousUser
+2024-02-29 13:35:03,421 INFO GET /catalog/ E90/ 200 AnonymousUser
+2024-02-29 13:36:05,237 INFO GET /catalog/ E90/1/2 404 pavel
+2024-02-29 13:36:05,298 INFO GET /catalog/ E90/1/2/ 200 AnonymousUser
+2024-02-29 13:36:37,067 INFO GET /company/ 200 AnonymousUser

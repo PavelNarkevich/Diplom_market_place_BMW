@@ -31,7 +31,12 @@ class CatalogCarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cars
-        fields = ['id', 'series', 'body']
+        fields = [
+            'id',
+            'series',
+            'body',
+            'photo'
+        ]
 
 
 class BodyTypeSerializer(serializers.ModelSerializer):

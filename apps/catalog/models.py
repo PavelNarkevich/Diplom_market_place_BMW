@@ -146,6 +146,7 @@ class Component(models.Model):
         on_delete=models.CASCADE,
         related_name="elem"
     )
+    car = models.ManyToManyField(Cars)
     photo = models.ImageField(
         upload_to="component/",
         blank=True,

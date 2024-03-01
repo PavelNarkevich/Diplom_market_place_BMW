@@ -98,6 +98,12 @@ class Cars(models.Model):
     )
     model = models.CharField(max_length=15)
 
+    photo = models.ImageField(
+        upload_to='car_photo/',
+        null=True,
+        blank=True
+    )
+
     objects = models.Manager()
 
     def __str__(self):

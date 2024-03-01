@@ -259,3 +259,5 @@
 2024-03-01 12:48:45,281 INFO GET /catalog/bmw/E90/ 404 pavel
 2024-03-01 12:48:45,281 WARNING Not Found: /catalog/bmw/E90/
 2024-03-01 12:49:14,043 INFO GET /catalog/bmw/E90/ 200 AnonymousUser
+2024-03-01 12:51:25,829 INFO GET /catalog/bmw/E90/11 404 pavel
+2024-03-01 12:51:25,888 INFO GET /catalog/bmw/E90/11/ 200 AnonymousUser

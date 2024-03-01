@@ -202,7 +202,7 @@ class GetComponentGenericView(ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return Component.objects.filter(element=self.kwargs['elem_id'])
+        return Component.objects.filter(element=self.kwargs['elem_id'], car=self.kwargs['car_id'])
 
     def get(self, request, *args, **kwargs):
         data = list(self.get_queryset())

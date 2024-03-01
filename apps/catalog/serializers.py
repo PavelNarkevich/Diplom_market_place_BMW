@@ -122,7 +122,12 @@ class ComponentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Component
-        fields = '__all__'
+        fields = [
+            'id',
+            'element',
+            'name',
+            'photo'
+        ]
 
 
 class DetailsSerializer(serializers.ModelSerializer):

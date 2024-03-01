@@ -178,6 +178,7 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
 
+logs = os.path.join(BASE_DIR, 'logs')
 
 LOGGING = {
     'version': 1,
@@ -192,7 +193,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs'),
+            'filename': logs,
             'formatter': 'request_formatter',
         },
     },
@@ -204,7 +205,6 @@ LOGGING = {
         },
     },
 }
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/

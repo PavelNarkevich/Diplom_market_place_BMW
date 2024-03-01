@@ -107,7 +107,11 @@ class FullInfoCarSerializer(serializers.ModelSerializer):
 class CarElementSerializer(serializers.ModelSerializer):
     class Meta:
         model = CarElement
-        fields = '__all__'
+        fields = [
+            'id',
+            'name',
+            'photo'
+        ]
 
 
 class ComponentSerializer(serializers.ModelSerializer):

@@ -36,7 +36,7 @@ class SeriesAdmin(admin.ModelAdmin):
 
 @admin.register(Cars)
 class CarsAdmin(admin.ModelAdmin):
-    list_display = ['series', 'body', 'engine_type']
+    list_display = ['series', 'body', 'engine_type', 'engine_code', 'model']
 
 
 @admin.register(Country)

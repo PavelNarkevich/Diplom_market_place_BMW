@@ -61,7 +61,7 @@ class DetailAdmin(admin.ModelAdmin):
 
 @admin.register(Component)
 class ComponentAdmin(admin.ModelAdmin):
-    list_display = ['name']
+    list_display = ['name', 'element']
 
 
 @admin.register(Basket)

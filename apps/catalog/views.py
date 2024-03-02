@@ -20,17 +20,18 @@ from apps.catalog.models import (
 from apps.catalog.serializers import (
     CatalogCarSerializer,
     TypeCarSerializer,
-    CarSerializer,
     FullInfoCarSerializer,
     CarElementSerializer,
     ComponentSerializer,
-    TestSerializer,
     BasketSerializer,
     FullInfoDetailsSerializer,
     AddOrderSerializer,
     AddBasketSerializer,
     GetUserOrderSerializer,
     UpdateBasketSerializer,
+    CreateCarSerializer,
+    CreateComponentSerializer,
+    CreateDetailsSerializer,
 )
 
 from rest_framework.generics import (
@@ -62,14 +63,14 @@ class GetChoiceTypeCarGenericView(ListAPIView):
 
 
 class CreateCarsGenericView(ListCreateAPIView):
-    serializer_class = FullInfoCarSerializer
+    serializer_class = CreateCarSerializer
     permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
         return Cars.objects.all()
 
     def get(self, request, *args, **kwargs):
-        instance = list(self.get_queryset())
+        instance = self.get_queryset()
         serializer = self.get_serializer(instance=instance, many=True)
 
         if instance:
@@ -102,14 +103,7 @@ class GetCarGenericView(ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        car = Cars.objects.filter(id=self.kwargs['car_id'])
-        if car:
-            return car
-
-        return Response(
-            status=status.HTTP_204_NO_CONTENT,
-            data=[]
-        )
+        return Cars.objects.all()
 
     def get_object(self):
         data = {
@@ -120,33 +114,40 @@ class GetCarGenericView(ListAPIView):
 
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer_car = FullInfoCarSerializer(instance=instance.get('car'), many=True)
-        serializer_element = CarElementSerializer(instance=instance.get('element'), many=True)
-        data = {
-            'car': serializer_car.data,
-            'element': serializer_element.data
-        }
+
+        if instance['car']:
+            serializer_car = FullInfoCarSerializer(instance=instance.get('car'), many=True)
+            serializer_element = CarElementSerializer(instance=instance.get('element'), many=True)
+
+            data = {
+                'car': serializer_car.data,
+                'element': serializer_element.data
+            }
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=data
+            )
+
         return Response(
-            status=status.HTTP_200_OK,
-            data=data
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
         )
 
 
 class UpdateDeleteCarsGenericView(RetrieveUpdateDestroyAPIView):
-    serializer_class = CarSerializer
+    serializer_class = CreateCarSerializer
     permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
-        car = Cars.objects.filter(id=self.kwargs['car_id'])
-        return car
+        return Cars.objects.all()
 
     def get_object(self):
-        data = Cars.objects.filter(id=self.kwargs['car_id'])
-        return data
+        return get_object_or_404(Cars, id=self.kwargs['car_id'])
 
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.serializer_class(instance=instance, many=True)
+        serializer = self.serializer_class(instance=instance)
 
         return Response(
             status=status.HTTP_200_OK,
@@ -188,7 +189,7 @@ class UpdateDeleteCarsGenericView(RetrieveUpdateDestroyAPIView):
         )
 
     def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
+        instance = get_object_or_404(Cars, id=self.kwargs['car_id'])
         instance.delete()
 
         return Response(
@@ -205,7 +206,7 @@ class GetComponentGenericView(ListAPIView):
         return Component.objects.filter(element=self.kwargs['elem_id'], car=self.kwargs['car_id'])
 
     def get(self, request, *args, **kwargs):
-        data = list(self.get_queryset())
+        data = self.get_queryset()
 
         if data:
             serializer = self.serializer_class(instance=data, many=True)
@@ -231,7 +232,7 @@ class GetDetailsGenericView(ListAPIView):
         )
 
     def get(self, request, *args, **kwargs):
-        data = list(self.get_queryset())
+        data = self.get_queryset()
 
         if data:
             serializer = self.serializer_class(instance=data, many=True)
@@ -247,24 +248,6 @@ class GetDetailsGenericView(ListAPIView):
         )
 
 
-class TestGenericView(RetrieveAPIView):
-    serializer_class = TestSerializer
-
-    def get_queryset(self):
-        return Details.object.all()
-
-    def get(self, request, *args, **kwargs):
-        data = Details.object.filter(id=1).first()
-        new_data = data.price
-        print(new_data)
-
-        serializer = self.serializer_class(instance=data)
-
-        return Response(
-            status=status.HTTP_200_OK,
-            data=serializer.data
-        )
-
 
 class GetBasketGenericView(ListAPIView):
     serializer_class = BasketSerializer
@@ -274,7 +257,7 @@ class GetBasketGenericView(ListAPIView):
         return Basket.object.filter(shopper=self.request.user.id, status='P')
 
     def get(self, request, *args, **kwargs):
-        instance = list(self.get_queryset())
+        instance = self.get_queryset()
 
         if instance:
             serializer = self.serializer_class(instance=instance, many=True)
@@ -319,18 +302,15 @@ class UpdateDeletedBasketGenericView(RetrieveUpdateDestroyAPIView):
     permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
-        return Basket.object.filter(
-            shopper=self.request.user,
-            status='P',
-            items=self.kwargs['id_detail']
-        ).first()
+        return Basket.object.all()
 
     def get_object(self):
-        return Basket.object.filter(
-            shopper=self.request.user,
+        return get_object_or_404(
+            Basket,
             items=self.kwargs['id_detail'],
+            shopper=self.request.user,
             status='P'
-        ).first()
+        )
 
     def put(self, request, *args, **kwargs):
         instance = get_object_or_404(
@@ -340,16 +320,13 @@ class UpdateDeletedBasketGenericView(RetrieveUpdateDestroyAPIView):
             status='P'
         )
 
-        serializer = self.serializer_class(
-            instance=instance,
-            data=request.data
-        )
+        serializer = self.serializer_class(instance=instance, data=request.data)
 
         if serializer.is_valid(raise_exception=True):
             serializer.save()
 
             return Response(
-                status=status.HTTP_200_OK,
+                status=status.HTTP_205_RESET_CONTENT,
                 data=serializer.data
             )
 
@@ -401,7 +378,7 @@ class UpdateDeletedCarElementGenericView(RetrieveUpdateDestroyAPIView):
             serializer.save()
 
             return Response(
-                status=status.HTTP_200_OK,
+                status=status.HTTP_205_RESET_CONTENT,
                 data=serializer.data
             )
 
@@ -428,7 +405,7 @@ class CreateCarElementGenericView(ListCreateAPIView):
         return CarElement.objects.all()
 
     def get(self, request, *args, **kwargs):
-        instance = list(self.get_queryset())
+        instance = self.get_queryset()
 
         serializer = self.serializer_class(instance=instance, many=True)
 
@@ -465,11 +442,8 @@ class CreateCarComponentGenericView(ListCreateAPIView):
         return Component.objects.all()
 
     def get(self, request, *args, **kwargs):
-        instance = list(self.get_queryset())
-        serializer = self.serializer_class(
-            instance=instance,
-            many=True
-        )
+        instance = self.get_queryset()
+        serializer = self.serializer_class(instance=instance, many=True)
 
         if instance:
             return Response(
@@ -483,12 +457,15 @@ class CreateCarComponentGenericView(ListCreateAPIView):
         )
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = CreateComponentSerializer(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
             serializer.save()
 
-            return self.get(request, *args, **kwargs)
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
 
         return Response(
             status=status.HTTP_400_BAD_REQUEST,
@@ -497,7 +474,7 @@ class CreateCarComponentGenericView(ListCreateAPIView):
 
 
 class UpdateCarComponentGenericView(RetrieveUpdateDestroyAPIView):
-    serializer_class = ComponentSerializer
+    serializer_class = CreateComponentSerializer
     permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
@@ -530,6 +507,7 @@ class UpdateCarComponentGenericView(RetrieveUpdateDestroyAPIView):
 
         if serializer.is_valid(raise_exception=True):
             serializer.save()
+
             return Response(
                 status=status.HTTP_200_OK,
                 data=serializer.data
@@ -541,7 +519,7 @@ class UpdateCarComponentGenericView(RetrieveUpdateDestroyAPIView):
         )
 
     def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
+        instance = get_object_or_404(Component, id=self.kwargs['id_component'])
         instance.delete()
 
         return Response(
@@ -557,11 +535,8 @@ class CreateDetailsGenericView(ListCreateAPIView):
     def get_queryset(self):
         return Details.object.all()
 
-    def get_object(self):
-        return Details.object.all()
-
     def get(self, request, *args, **kwargs):
-        instance = list(self.get_queryset())
+        instance = self.get_queryset()
         serializer = self.serializer_class(instance=instance, many=True)
 
         if instance:
@@ -576,7 +551,7 @@ class CreateDetailsGenericView(ListCreateAPIView):
         )
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = CreateDetailsSerializer(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -593,7 +568,7 @@ class CreateDetailsGenericView(ListCreateAPIView):
 
 
 class UpdateDetailsGenericView(RetrieveUpdateDestroyAPIView):
-    serializer_class = FullInfoDetailsSerializer
+    serializer_class = CreateDetailsSerializer
     permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
@@ -604,7 +579,7 @@ class UpdateDetailsGenericView(RetrieveUpdateDestroyAPIView):
 
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.serializer_class(instance=instance, many=True)
+        serializer = self.serializer_class(instance=instance)
 
         if instance:
             return Response(
@@ -638,7 +613,7 @@ class UpdateDetailsGenericView(RetrieveUpdateDestroyAPIView):
         )
 
     def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
+        instance = get_object_or_404(Details, id=self.kwargs['id_detail'])
         instance.delete()
 
         return Response(
@@ -740,13 +715,11 @@ class GetUserOrdersGenericView(ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Order.object.all()
-
-    def get_object(self):
         return Order.object.filter(shopper=self.request.user).all()
 
+
     def get(self, request, *args, **kwargs):
-        instance = list(self.get_object())
+        instance = self.get_queryset()
 
         if instance:
             serializer = self.serializer_class(instance=instance, many=True)

@@ -48,7 +48,7 @@ class UpdateStatusOrdersGenericView(RetrieveUpdateAPIView):
             serializer.save()
 
             return Response(
-                status=status.HTTP_200_OK,
+                status=status.HTTP_205_RESET_CONTENT,
                 data=serializer.data
             )
 

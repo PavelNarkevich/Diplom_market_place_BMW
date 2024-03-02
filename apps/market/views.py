@@ -32,7 +32,7 @@ from rest_framework.permissions import (
     AllowAny,
     IsAdminUser,
     IsAuthenticated,
-    DjangoModelPermissions, DjangoModelPermissionsOrAnonReadOnly
+    DjangoModelPermissions, DjangoModelPermissionsOrAnonReadOnly, DjangoObjectPermissions
 )
 
 
@@ -59,10 +59,17 @@ class PutInfoCompanyGenericView(RetrieveUpdateAPIView):
 
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = CompanySerializer(instance=instance)
+
+        if instance:
+            serializer = CompanySerializer(instance=instance)
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
         return Response(
-            status=status.HTTP_200_OK,
-            data=serializer.data
+            status=status.HTTP_204_NO_CONTENT,
+            data=[]
         )
 
     def put(self, request, *args, **kwargs):
@@ -74,7 +81,7 @@ class PutInfoCompanyGenericView(RetrieveUpdateAPIView):
             serializer.save()
 
             return Response(
-                status=status.HTTP_200_OK,
+                status=status.HTTP_205_RESET_CONTENT,
                 data=serializer.data
             )
 
@@ -156,7 +163,7 @@ class UpdateDeleteSocialNetworkGenericView(RetrieveUpdateDestroyAPIView):
         return get_object_or_404(SocialNetwork, id=instance_id)
 
 
-class GetNewsGenericView(ListAPIView):
+class GetListNewsGenericView(ListAPIView):
     serializer_class = NewsSerializer
     permission_classes = [AllowAny]
 
@@ -189,8 +196,7 @@ class CreateNewsGenericView(CreateAPIView):
 
     def prepare_data(self):
         data = {
-            'title': self.request.data['title'],
-            'content': self.request.data['content'],
+            **self.request.data,
             'author': self.request.user.id
         }
         CreateNewsSerializer.Meta.fields.append('author')
@@ -201,7 +207,7 @@ class CreateNewsGenericView(CreateAPIView):
 
         serializer = self.get_serializer(data=data)
 
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
 
             CreateNewsSerializer.Meta.fields.remove('author')
@@ -211,6 +217,8 @@ class CreateNewsGenericView(CreateAPIView):
                 data=serializer.data
             )
 
+        CreateNewsSerializer.Meta.fields.remove('author')
+
         return Response(
             status=status.HTTP_400_BAD_REQUEST,
             data=serializer.errors
@@ -219,7 +227,7 @@ class CreateNewsGenericView(CreateAPIView):
 
 class UpdateDeleteNewsGenericView(RetrieveUpdateDestroyAPIView):
     serializer_class = UpdateNewsSerializer
-    permission_classes = (DjangoModelPermissionsOrAnonReadOnly,)
+    permission_classes = [DjangoModelPermissions]
 
     def get_queryset(self):
         return News.objects.all()
@@ -246,13 +254,13 @@ class UpdateDeleteNewsGenericView(RetrieveUpdateDestroyAPIView):
 
     def put(self, request, *args, **kwargs):
         instance = get_object_or_404(News, id=self.kwargs['id_news'])
-
         serializer = self.serializer_class(instance=instance, data=request.data)
+
         if serializer.is_valid(raise_exception=True):
             serializer.save()
 
             return Response(
-                status=status.HTTP_200_OK,
+                status=status.HTTP_205_RESET_CONTENT,
                 data=serializer.data
             )
 
@@ -268,4 +276,21 @@ class UpdateDeleteNewsGenericView(RetrieveUpdateDestroyAPIView):
         return Response(
             status=status.HTTP_200_OK,
             data="Deleted successfully"
+        )
+
+
+class GetNewsGenericView(RetrieveAPIView):
+    serializer_class = NewsSerializer
+    permission_classes = [AllowAny]
+
+    def get_object(self):
+        return get_object_or_404(News, id=self.kwargs['id_news'])
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.serializer_class(instance=instance)
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=serializer.data
         )

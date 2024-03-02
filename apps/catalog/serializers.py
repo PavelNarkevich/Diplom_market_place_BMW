@@ -67,6 +67,44 @@ class CarSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class CreateCarSerializer(serializers.ModelSerializer):
+    body_type = serializers.SlugRelatedField(
+        slug_field='body',
+        queryset=BodyType.objects.all()
+    )
+    series = serializers.SlugRelatedField(
+        slug_field='number',
+        queryset=Series.objects.all()
+    )
+    engine_type = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=EngineType.objects.all()
+    )
+    transmission = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=Transmission.objects.all()
+    )
+    country = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=Country.objects.all()
+    )
+
+    class Meta:
+        model = Cars
+        fields = [
+            'id',
+            'body_type',
+            'series',
+            'engine_type',
+            'transmission',
+            'country',
+            'body',
+            'engine_code',
+            'model',
+            'photo'
+        ]
+
+
 class FullInfoCarSerializer(serializers.ModelSerializer):
     body_type = serializers.SlugRelatedField(
         slug_field='body',
@@ -114,11 +152,25 @@ class CarElementSerializer(serializers.ModelSerializer):
         ]
 
 
+
+class CreateComponentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Component
+        fields = [
+            'id',
+            'element',
+            'name',
+            'photo',
+            'car'
+        ]
+
+
 class ComponentSerializer(serializers.ModelSerializer):
     element = serializers.SlugRelatedField(
         slug_field='name',
         queryset=CarElement.objects.all()
     )
+    car = FullInfoCarSerializer(many=False, read_only=True)
 
     class Meta:
         model = Component
@@ -126,7 +178,8 @@ class ComponentSerializer(serializers.ModelSerializer):
             'id',
             'element',
             'name',
-            'photo'
+            'photo',
+            'car'
         ]
 
 
@@ -168,10 +221,23 @@ class AddBasketSerializer(serializers.ModelSerializer):
         ]
 
 
+
+class CreateDetailsSerializer(serializers.ModelSerializer):
+    car = serializers.SlugRelatedField(
+        slug_field='id',
+        queryset=Cars.objects.all()
+    )
+
+    class Meta:
+        model = Details
+        fields = '__all__'
+
+
+
 class FullInfoDetailsSerializer(serializers.ModelSerializer):
-    car = CarSerializer(many=True, read_only=True),
+    car = CarSerializer()
     component = serializers.SlugRelatedField(
-        slug_field='name',
+        slug_field='id',
         queryset=Component.objects.all()
     )
 

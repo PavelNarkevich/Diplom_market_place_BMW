@@ -2,14 +2,15 @@ from django.contrib.auth.models import User
 from django.db import models
 from apps.catalog.models import Basket
 
+status_choice = [
+    ('P', 'Pending'),
+    ('C', 'Confirmed'),
+    ('D', 'Done'),
+    ('R', 'Rejection')
+]
+
 
 class Order(models.Model):
-    status_choice = [
-        ('P', 'Pending'),
-        ('C', 'Confirmed'),
-        ('D', 'Done'),
-        ('R', 'Rejection')
-    ]
     shopper = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

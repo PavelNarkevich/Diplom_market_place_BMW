@@ -2,9 +2,7 @@ from django.contrib.auth import password_validation
 from rest_framework import serializers
 
 from django.contrib.auth.models import User
-from rest_framework.exceptions import ValidationError
 
-from apps.catalog.models import Cars
 from apps.catalog.serializers import FullInfoCarSerializer
 
 from apps.user.validators import ValidateRegisterData

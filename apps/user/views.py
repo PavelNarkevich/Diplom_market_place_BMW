@@ -1,5 +1,4 @@
-from django.contrib.auth.models import User
-from rest_framework.exceptions import ValidationError
+from django.contrib.auth.models import User, Group
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated,
@@ -12,10 +11,9 @@ from rest_framework.generics import (
     CreateAPIView,
     RetrieveUpdateAPIView,
     UpdateAPIView,
-    ListAPIView,
+    ListAPIView, get_object_or_404,
 )
 
-from apps.catalog.models import Cars
 from apps.user.models import Garage
 
 from apps.user.errors_massages import NEW_PASSWORD_DO_NOT_MATCH_OLD_PASSWORD
@@ -35,8 +33,12 @@ class UserRegisterGenericView(CreateAPIView):
     @staticmethod
     def give_group_user(username):
         user = User.objects.filter(username=username).first()
+        group = Group.objects.get(id=3)
 
-        user.groups.add(3)  # Users group
+        if group.name == 'Users':
+            user.groups.add(3)  # Users group
+            return user
+
         return user
 
     def post(self, request, *args, **kwargs):
@@ -91,7 +93,7 @@ class GetUpdateProfileUserGenericView(RetrieveUpdateAPIView):
             serializer.save()
 
             return Response(
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_205_RESET_CONTENT,
                 data=serializer.data
             )
 
@@ -120,7 +122,7 @@ class UpdateUserPasswordGenericView(UpdateAPIView):
                 user.save()
 
                 return Response(
-                    status=status.HTTP_200_OK,
+                    status=status.HTTP_205_RESET_CONTENT,
                     data="Password updated successfully"
                 )
 
@@ -140,18 +142,17 @@ class GetUserGarageGenericView(ListAPIView):
     serializer_class = GarageSerializer
 
     def get_queryset(self):
-        return Garage.object.get(user=self.request.user.id)
+        return get_object_or_404(Garage, user=self.request.user.id)
 
     def get(self, request, *args, **kwargs):
         instance = self.get_queryset()
 
-        if instance:
-            serializer = self.serializer_class(instance=instance)
+        serializer = self.serializer_class(instance=instance)
 
-            return Response(
-                status=status.HTTP_200_OK,
-                data=serializer.data
-            )
+        return Response(
+            status=status.HTTP_200_OK,
+            data=serializer.data
+        )
 
 
 class UpdateUserGarageGenericView(UpdateAPIView):
@@ -159,7 +160,7 @@ class UpdateUserGarageGenericView(UpdateAPIView):
     serializer_class = UpdateGarageSerializer
 
     def get_object(self):
-        return Garage.object.get(user=self.request.user.id)
+        return get_object_or_404(Garage, user=self.request.user.id)
 
     def put(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -169,7 +170,7 @@ class UpdateUserGarageGenericView(UpdateAPIView):
             serializer.save()
 
             return Response(
-                status=status.HTTP_200_OK,
+                status=status.HTTP_205_RESET_CONTENT,
                 data=serializer.data
             )
 

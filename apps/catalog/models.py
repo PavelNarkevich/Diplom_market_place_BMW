@@ -160,7 +160,7 @@ class Component(models.Model):
     objects = models.Manager()
 
     def __str__(self):
-        return self.name
+        return f'{self.name} {self.car}'
 
     class Meta:
         verbose_name = "component"
@@ -185,9 +185,10 @@ class Details(models.Model):
         on_delete=models.CASCADE,
         related_name="component"
     )
-    car = models.ManyToManyField(
+    car = models.ForeignKey(
         Cars,
-        related_name="car"
+        on_delete=models.CASCADE,
+        default=None
     )
     quantity = models.IntegerField()
     description = models.CharField(

@@ -9,7 +9,8 @@ from apps.user.views import (
     GetUpdateProfileUserGenericView,
     UpdateUserPasswordGenericView,
     GetUserGarageGenericView,
-    UpdateUserGarageGenericView
+    UpdateUserGarageGenericView,
+    CreateMessageGenericView
 )
 
 urlpatterns = [
@@ -20,4 +21,5 @@ urlpatterns = [
     path('profile/password/', UpdateUserPasswordGenericView.as_view()),
     path('profile/garage/', GetUserGarageGenericView.as_view()),
     path('profile/garage/update/', UpdateUserGarageGenericView.as_view()),
+    path('test/', CreateMessageGenericView.as_view())
 ]

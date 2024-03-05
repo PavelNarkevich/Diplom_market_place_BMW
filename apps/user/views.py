@@ -11,7 +11,8 @@ from rest_framework.generics import (
     CreateAPIView,
     RetrieveUpdateAPIView,
     UpdateAPIView,
-    ListAPIView, get_object_or_404,
+    ListAPIView,
+    get_object_or_404,
 )
 
 from apps.user.models import Garage
@@ -23,6 +24,7 @@ from apps.user.serializers import (
     UserChangePasswordSerializer,
     GarageSerializer,
     UpdateGarageSerializer,
+    CreateMassageSerializer
 )
 
 
@@ -173,6 +175,41 @@ class UpdateUserGarageGenericView(UpdateAPIView):
                 status=status.HTTP_205_RESET_CONTENT,
                 data=serializer.data
             )
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+
+class CreateMessageGenericView(CreateAPIView):
+    serializer_class = CreateMassageSerializer
+    permission_classes = [AllowAny]
+
+    def prepare_data(self):
+        data = {
+            **self.request.data,
+            'user': self.request.user.id
+        }
+        self.serializer_class.Meta.fields.append('user')
+
+        return data
+
+    def post(self, request, *args, **kwargs):
+        data = self.prepare_data()
+        serializer = self.serializer_class(data=data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            serializer.Meta.fields.remove('user')
+
+            return Response(
+                status=status.HTTP_200_OK,
+                data=serializer.data
+            )
+
+        serializer.Meta.fields.remove('user')
 
         return Response(
             status=status.HTTP_400_BAD_REQUEST,

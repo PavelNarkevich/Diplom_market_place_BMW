@@ -9,6 +9,10 @@ from apps.user.validators import ValidateRegisterData
 
 from apps.user.models import Garage
 
+from apps.staff.models import (
+    Message, Chats,
+)
+
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
@@ -102,8 +106,24 @@ class GarageSerializer(serializers.ModelSerializer):
 
 
 class UpdateGarageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Garage
         fields = ['cars']
 
+
+class CreateMassageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['content']
+
+    def create(self, validated_data):
+        content = validated_data['content']
+        user = validated_data['user']
+
+        message = Message.objects.create(content=content, user=user)
+
+
+        chat = Chats.objects.create(user_id=user.id)
+        chat.messages.add(message)
+
+        return validated_data

@@ -31,8 +31,7 @@ from rest_framework.generics import (
 from rest_framework.permissions import (
     AllowAny,
     IsAdminUser,
-    IsAuthenticated,
-    DjangoModelPermissions, DjangoModelPermissionsOrAnonReadOnly, DjangoObjectPermissions
+    DjangoModelPermissions
 )
 
 

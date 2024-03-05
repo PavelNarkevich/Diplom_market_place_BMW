@@ -100,6 +100,3 @@ class Chats(models.Model):
     class Meta:
         verbose_name = 'Chat'
         verbose_name_plural = 'Chats'
-
-
-Chats.objects.create()

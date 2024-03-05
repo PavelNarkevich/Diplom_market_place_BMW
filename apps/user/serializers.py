@@ -111,7 +111,7 @@ class UpdateGarageSerializer(serializers.ModelSerializer):
         fields = ['cars']
 
 
-class CreateMassageSerializer(serializers.ModelSerializer):
+class CreateQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = ['content']
@@ -124,6 +124,51 @@ class CreateMassageSerializer(serializers.ModelSerializer):
 
 
         chat = Chats.objects.create(user_id=user.id)
+        chat.messages.add(message)
+
+        return validated_data
+
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.get_full_name')
+
+    class Meta:
+        model = Message
+        fields = [
+            'content',
+            'user',
+            'created_at'
+        ]
+
+
+class ChatsSerializer(serializers.ModelSerializer):
+    messages = MessageSerializer(many=True)
+
+    class Meta:
+        model = Chats
+        fields = [
+            'messages',
+        ]
+
+
+
+
+class UpdateChatMessagesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['content']
+
+    def create(self, validated_data):
+        content = validated_data['content']
+        user = validated_data['user']
+
+        message = Message.objects.create(content=content, user=user)
+
+        chat = Chats.objects.get(
+            user_id=user.id,
+            status='P' or 'T'
+        )
         chat.messages.add(message)
 
         return validated_data

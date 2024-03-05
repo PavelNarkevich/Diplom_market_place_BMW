@@ -17,6 +17,8 @@ from rest_framework.generics import (
 
 from apps.user.models import Garage
 
+from apps.staff.models import Chats, Message
+
 from apps.user.errors_massages import NEW_PASSWORD_DO_NOT_MATCH_OLD_PASSWORD
 from apps.user.serializers import (
     UserRegisterSerializer,
@@ -24,7 +26,9 @@ from apps.user.serializers import (
     UserChangePasswordSerializer,
     GarageSerializer,
     UpdateGarageSerializer,
-    CreateMassageSerializer
+    CreateQuestionSerializer,
+    ChatsSerializer,
+    UpdateChatMessagesSerializer
 )
 
 
@@ -183,8 +187,8 @@ class UpdateUserGarageGenericView(UpdateAPIView):
 
 
 class CreateMessageGenericView(CreateAPIView):
-    serializer_class = CreateMassageSerializer
-    permission_classes = [AllowAny]
+    serializer_class = CreateQuestionSerializer
+    permission_classes = [IsAuthenticated]
 
     def prepare_data(self):
         data = {
@@ -205,11 +209,65 @@ class CreateMessageGenericView(CreateAPIView):
             serializer.Meta.fields.remove('user')
 
             return Response(
-                status=status.HTTP_200_OK,
+                status=status.HTTP_201_CREATED,
                 data=serializer.data
             )
 
         serializer.Meta.fields.remove('user')
+
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
+
+
+class GetUpdateMessageGenericView(RetrieveUpdateAPIView):
+    serializer_class = UpdateChatMessagesSerializer
+    permission_classes = [IsAuthenticated]
+
+
+    def get_object(self):
+        return get_object_or_404(
+            Chats,
+            user_id=self.request.user.id,
+            status='P' or 'Taken'
+        )
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = ChatsSerializer(instance=instance)
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=serializer.data
+        )
+
+    def prepare_data(self):
+        data = {
+            **self.request.data,
+            'user': self.request.user.id
+        }
+
+        self.serializer_class.Meta.fields.append('user')
+
+        return data
+
+    def put(self, request, *args, **kwargs):
+        data = self.prepare_data()
+
+        serializer = self.serializer_class(data=data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.create(validated_data=serializer.validated_data)
+
+            self.serializer_class.Meta.fields.remove('user')
+
+            return Response(
+                status=status.HTTP_205_RESET_CONTENT,
+                data=serializer.data
+            )
+
+        self.serializer_class.Meta.fields.remove('user')
 
         return Response(
             status=status.HTTP_400_BAD_REQUEST,

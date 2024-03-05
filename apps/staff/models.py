@@ -53,7 +53,7 @@ class Order(models.Model):
         verbose_name_plural = 'Order'
 
 
-class Massage(models.Model):
+class Message(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE
@@ -83,7 +83,7 @@ class Chats(models.Model):
         blank=True,
         related_name='helper'
     )
-    massages = models.ManyToManyField(Massage)
+    messages = models.ManyToManyField(Message)
     status = models.CharField(
         max_length=1,
         choices=order_status_choice,
